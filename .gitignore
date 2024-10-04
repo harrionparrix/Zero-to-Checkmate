@@ -1,0 +1,6 @@
+data/
+venv
+processed/
+runs
+__pycache__/
+notes.txt
