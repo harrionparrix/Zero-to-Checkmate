@@ -102,33 +102,16 @@ def bot_minimax(s, v, depth, a, b, big=False):
     else:
         return ret
 
-def explore_leaves(s, v):
-    ret = []
-    start = time.time()
-    v.reset()
-    bval = v(s)
-    cval, ret = bot_minimax(s, v, 0, a=-MAXVAL, b=MAXVAL, big=True)
-    eta = time.time() - start
-    print("%.2f -> %.2f: explored %d nodes in %.3f seconds" % (bval, cval, v.count, eta))
-    return ret
 
-# Instantiate the evaluator
-v = ClassicValuator()
 
 def bot_move(s, v):
     # bot move
-    move = sorted(explore_leaves(s, v), key=lambda x: x[0], reverse=s.board.turn)[:5]  # Limit to top 5 moves
-    if len(move) == 0:
-        return None  # No valid moves, return None
-    
-    print("Top moves:")
-    for i, m in enumerate(move[0:3]):
-        move_notation = s.board.san(m[1])
-        print(f"  Move {i + 1}: {move_notation} with value {m[0]}")
-    
-    best_move = move[0][1]
+    ret = []
+    v.reset()
+    bval = v(s)
+    cval, ret = bot_minimax(s, v, 0, a=-MAXVAL, b=MAXVAL, big=True)
+    best_move = sorted(ret, key=lambda x: x[0], reverse=s.board.turn)[0][1]
     move_notation = s.board.san(best_move)
-    print("white" if s.board.turn else "black", "moving", move_notation)
     s.board.push(best_move)
   
     return move_notation

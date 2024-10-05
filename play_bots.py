@@ -7,7 +7,7 @@ from state import State
 from train import Net
 from leela import Leela_Network
 from mini_max import bot_move, ClassicValuator
-from helper import save_pgn
+from helper import save_pgn, print_top_moves
 
 arch = [Net, Leela_Network]
 
@@ -18,7 +18,7 @@ class White(object):
         self.arch_indx = arch_indx
         self.architecture = arch[self.arch_indx]
         self.model = self.architecture()
-        vals = torch.load(f"nets/{name}.pth", map_location=lambda storage, loc: storage)
+        vals = torch.load(f"nets/{name}.pth", map_location=lambda storage, loc: storage,weights_only=True)
         self.model.load_state_dict(vals, strict=False)
 
     def __call__(self, s):
@@ -36,7 +36,7 @@ class Black(object):
         self.arch_indx = arch_indx
         self.architecture = arch[self.arch_indx]
         self.model = self.architecture()
-        vals = torch.load(f"nets/{name}.pth", map_location=lambda storage, loc: storage)
+        vals = torch.load(f"nets/{name}.pth", map_location=lambda storage, loc: storage,weights_only=True)
         self.model.load_state_dict(vals)
 
     def __call__(self, s):
@@ -60,44 +60,30 @@ def white_move(s, v):
         move_values.append((move_value, move))
         s.board.pop()
 
-    # Sort moves based on evaluation value
-    move_values = sorted(move_values, key=lambda x: x[0], reverse=s.board.turn)[:5]  # Limit to top 5 moves
-    
-    print("Top moves:")
-    for i, (value, move) in enumerate(move_values[0:3]):
-        move_notation = s.board.san(move)
-        # print(f"  Move {i + 1}: {move_notation} with value {value}")
-    
-    best_move = move_values[0][1]  # Select the best move
+    # print_top_moves(move_values,s)
+    best_move = max(move_values, key=lambda x: x[0])[1]
+
     move_notation = s.board.san(best_move)
     s.board.push(best_move)
   
     return move_notation
 
 def black_move(s, v):
-    # Generate legal moves and evaluate them
     legal_moves = list(s.board.legal_moves)
     if len(legal_moves) == 0:
-        return None  # No valid moves, return None
+        return None
     
     move_values = []
     for move in legal_moves:
         s.board.push(move)
-        move_value = v(s)  # Evaluate the move
+        move_value = v(s)
         move_values.append((move_value, move))
         s.board.pop()
 
-    # Sort moves based on evaluation value
-    move_values = sorted(move_values, key=lambda x: x[0], reverse=s.board.turn)[:5]  # Limit to top 5 moves
-    
-    print("Top moves:")
-    for i, (value, move) in enumerate(move_values[0:3]):
-        move_notation = s.board.san(move)
-        print(f"  Move {i + 1}: {move_notation} with value {value}")
-    
-    best_move = move_values[0][1]  # Select the best move
+    # print_top_moves(move_values,s)
+    best_move = max(ret, key=lambda x: x[0])[1]
+
     move_notation = s.board.san(best_move)
-    print("white" if s.board.turn else "black", "moving", move_notation)
     s.board.push(best_move)
   
     return move_notation
@@ -134,8 +120,6 @@ def play(white,black):
 
 def classical_play(color, test=True):
     s = State() 
-    print("Starting self-play...")
-
     pgn_moves = []
     gn = 1
 
@@ -204,4 +188,4 @@ if __name__ == "__main__":
 
     # Classical
     
-    classical_play(black,False)
+    classical_play(white,True)
