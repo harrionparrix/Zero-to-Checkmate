@@ -21,3 +21,9 @@
    ```bash
    pip install python-chess
    ```
+
+## Architecture
+
+-**train.py**: Implements a CNN architecture for self-play.
+
+-**leela.py** Implements the LEELA architecture (https://lczero.org/dev/backend/nn/)

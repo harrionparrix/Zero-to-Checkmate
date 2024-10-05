@@ -8,9 +8,12 @@ from torch.utils.data import Dataset, DataLoader
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
+name = "Nakamura"
+
 class ChessValueDataset(Dataset):
+    global name
     def __init__(self):
-        dat = np.load("processed/ding_1M.npz")
+        dat = np.load(f"processed/{name}_1M.npz")
         self.X = dat['arr_0']
         self.Y = dat['arr_1']
         print("loaded", self.X.shape, self.Y.shape)
@@ -104,6 +107,7 @@ if __name__ == "__main__":
 
         if not os.path.exists("nets"):
             os.makedirs("nets")
-        torch.save(model.state_dict(), "nets/ding_2.pth")
+
+        torch.save(model.state_dict(), f"nets/{name.lower()}.pth")
 
     writer.close()
