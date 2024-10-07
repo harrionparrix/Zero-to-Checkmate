@@ -15,7 +15,7 @@ class State(object):
       assert self.board.is_valid()
 
       # 1. Initialize board state array (5 layers of 8x8 matrix)
-      state = np.zeros((5, 8, 8), dtype=np.uint8)
+      state = np.zeros((5, 8, 8), dtype=np.uint16)
 
       # 2. Piece mapping: 1-6 for white pieces, 9-14 for black pieces
       piece_map = {

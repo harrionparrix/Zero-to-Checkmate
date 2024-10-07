@@ -6,10 +6,11 @@ import torch
 from state import State
 from train import Net
 from leela import Leela_Network
+from alpha_zero import AlphaZero
 from mini_max import bot_move, ClassicValuator
 from helper import save_pgn, print_top_moves
 
-arch = [Net, Leela_Network]
+arch = [Net, Leela_Network,AlphaZero]
 
 class White(object):
     def __init__(self,name,arch_indx=0):
@@ -81,7 +82,7 @@ def black_move(s, v):
         s.board.pop()
 
     # print_top_moves(move_values,s)
-    best_move = max(ret, key=lambda x: x[0])[1]
+    best_move = max(move_values, key=lambda x: x[0])[1]
 
     move_notation = s.board.san(best_move)
     s.board.push(best_move)
@@ -116,7 +117,7 @@ def play(white,black):
     print("Game Over!")
     print("Result:", s.board.result())
 
-    save_pgn(pgn_moves, white_name, black_name)
+    save_pgn(pgn_moves, white.model_name, black.model_name)
 
 def classical_play(color, test=True):
     s = State() 
@@ -182,10 +183,10 @@ def classical_play(color, test=True):
 if __name__ == "__main__":
 
     # Bot : Name, Arch_index
-    white = White("nakamura",0)
+    white = White("reinforce_two_basic",0)
     black = Black("ding",0)
-    # play(white,black)
+    play(white,black)
 
     # Classical
     
-    classical_play(white,True)
+    # classical_play(white,True)

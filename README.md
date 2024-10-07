@@ -26,4 +26,6 @@
 
 -**train.py**: Implements a CNN architecture for self-play.
 
--**leela.py** Implements the LEELA architecture (https://lczero.org/dev/backend/nn/)
+-**leela.py**: Implements the LEELA architecture (https://lczero.org/dev/backend/nn/)
+
+-**alpha_zero.py**: Implements the AlphaZero architecture (https://nikcheerla.github.io/deeplearningschool/2018/01/01/AlphaZero-Explained/)

@@ -93,6 +93,6 @@ def self_play(name):
         file.write(pgn)
 
 if __name__ == "__main__":
-    name = "Gukesh"
+    name = "reinforce_one_basic"
     # Instantiate the evaluator
     self_play(name)
