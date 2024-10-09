@@ -6,3 +6,6 @@ __pycache__/
 notes.txt
 nets/
 pgns/
+stockfish-windows-x86-64/
+stockfish-windows-x86-64-avx2/
+stockfish-windows-x86-64-avx2.zip
