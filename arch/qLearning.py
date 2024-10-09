@@ -10,15 +10,14 @@ from math import log, sqrt, e, inf
 from helper import save_pgn
 
 class Node:
-    def __init__(self, state=None, parent=None, move=None):
-        self.state = state if state else chess.Board()
-        self.action = None
-        self.children = []
-        self.parent = parent
-        self.N = 0  # Total visits to the parent node
-        self.n = 0  # Visits to this node
-        self.v = 0  # Value of the node
-        self.move = move  # Track the move that led to this node
+    def __init__(self, state, parent=None, move=None):
+        self.state = state  # The board configuration (chess.Board object)
+        self.parent = parent  # Parent node in the tree
+        self.children = []  # List of child nodes
+        self.n = 0  # Number of visits to this node
+        self.v = 0  # Total reward accumulated at this node
+        self.move = move  # The move that led to this node
+        self.Q = {}  # Q-values for each move (action) from this state
 
     def add_child(self, child):
         self.children.append(child)
@@ -30,8 +29,8 @@ class Node:
 def ucb1(curr_node, exploration_param=2, e = 1e-6):
     """UCB1 formula for balancing exploration and exploitation."""
     if curr_node.n == 0:
-        return inf
-    return curr_node.v / curr_node.n + exploration_param * sqrt(log(curr_node.parent.N + e) / (curr_node.n))
+        return inf  # Prioritize unvisited nodes
+    return (curr_node.v / curr_node.n) + exploration_param * sqrt(log(curr_node.parent.n + e) / curr_node.n)
 
 
 def rollout(curr_node):
@@ -52,28 +51,50 @@ def rollout(curr_node):
 
 
 def expand(curr_node):
-    """Expand a node by adding one of its unexplored children."""
+    """Expand a node by adding one unexplored child."""
     legal_moves = list(curr_node.state.legal_moves)
-    for move in legal_moves:
+    unexplored_moves = [move for move in legal_moves if move not in [child.move for child in curr_node.children]]
+    if unexplored_moves:
+        move = random.choice(unexplored_moves)
         tmp_state = curr_node.state.copy()
         tmp_state.push(move)
-        child = Node(state=tmp_state, parent=curr_node, move=move) 
+        child = Node(state=tmp_state, parent=curr_node, move=move)
         curr_node.add_child(child)
+        return child
     return random.choice(curr_node.children)
 
 
-def best_child(curr_node, white):
-    """Select the child node with the best UCB1 score."""
-    return max(curr_node.children, key=lambda child: ucb1(child)) if white else min(curr_node.children, key=lambda child: ucb1(child))
+def best_child(node, white, epsilon=0.1):
+    """Select the best child node based on Q-values using epsilon-greedy strategy."""
+    if random.uniform(0, 1) < epsilon:
+        # Explore: Pick a random move
+        return random.choice(node.children)
+    
+    # Exploit: Choose the child node with the highest Q-value
+    return max(node.children, key=lambda child: node.Q.get(child.move, 0))
 
 
-def backup(curr_node, reward):
-    """Backpropagate the result of the simulation."""
-    while curr_node:
-        curr_node.n += 1
-        curr_node.v += reward
-        reward = -reward
-        curr_node = curr_node.parent
+def backup(node, reward, learning_rate=0.1, discount_factor=0.9):
+    """Backpropagate the reward up the tree and update Q-values."""
+    while node:
+        # Get the move that led to this node
+        move = node.move
+        
+        if node.parent is not None:
+            # Get current Q-value for the move that led to this node
+            current_q = node.parent.Q.get(move, 0)  # Default Q-value is 0 if it hasn't been visited
+
+            # Q-learning update rule
+            future_q = max(node.Q.values(), default=0)  # Max Q-value for future moves
+            updated_q = current_q + learning_rate * (reward + discount_factor * future_q - current_q)
+
+            # Update the Q-value for this move in the parent node
+            node.parent.Q[move] = updated_q
+
+        # Move up the tree
+        node = node.parent
+
+
 
 
 def mcts_search(root, white, iterations=1000):
@@ -130,9 +151,10 @@ while not board.is_game_over():
             pgn_moves[-1] += f" {black_played}"  
         gn += 1
     print("Move Number: ", gn)
+    
 
 print(board)
-save_pgn(pgn_moves, "MCTS_1000", "MCTS_1000")
+save_pgn(pgn_moves, "QLearn", "QLearn")
 print(board.result())
 game.headers["Result"] = board.result()
 
