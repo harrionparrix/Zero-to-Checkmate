@@ -16,6 +16,7 @@
 - **Value Estimation**: Utilizes a neural network for board state evaluation, alongside classic heuristic evaluations.
 - **Self-Play**: Capable of playing against itself for training and testing purposes.
 - **PGN Export**: Saves the game in PGN format for analysis and record-keeping.
+- **Transfer Learning**: Implemented Transfer Learning on different models.
 
 ## Installation
 
@@ -33,9 +34,9 @@
 
 2. **MCTS**: Monte Carlo Tree Search (https://en.wikipedia.org/wiki/Monte_Carlo_tree_search)
 
-3. **leela.py**: Implements the LEELA architecture (https://lczero.org/dev/backend/nn/)
+3. **Leela**: Implements the LEELA architecture (https://lczero.org/dev/backend/nn/)
 
-4. **alpha_zero.py**: Implements the base AlphaZero architecture (https://nikcheerla.github.io/deeplearningschool/2018/01/01/AlphaZero-Explained/)
+4. **Alpha Zero**: Implements the base AlphaZero architecture (https://nikcheerla.github.io/deeplearningschool/2018/01/01/AlphaZero-Explained/)
 
 5. **Q-Learning based MCTS**: Added Q Learning to improve MCTS (https://en.wikipedia.org/wiki/Q-learning)
 

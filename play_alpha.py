@@ -10,7 +10,7 @@ from arch.alpha_zero import AlphaZero
 from arch.mini_max import bot_move, ClassicValuator
 from helper import save_pgn, print_top_moves
 
-arch = [Net, Leela_Network, AlphaZero]
+arch = [AlphaZero]
 
 class White(object):
     def __init__(self,name,arch_indx=0):
@@ -25,11 +25,9 @@ class White(object):
     def __call__(self, s):
         # Serialize the board state for input to the model
         brd = s.serialize()[None]
-        output = self.model(torch.tensor(brd).float())
-        if self.arch_indx == 0:
-            return float(output.data[0][0])
-        return float(output.item())
-
+        _, value = self.model(torch.tensor(brd).float())
+        value = value.mean()
+        return float(value)
 
 class Black(object):
     def __init__(self,name,arch_indx=0):
@@ -42,11 +40,9 @@ class Black(object):
 
     def __call__(self, s):
         brd = s.serialize()[None]
-        output = self.model(torch.tensor(brd).float())
-        print(output.shape)
-        if self.arch_indx == 0:
-            return float(output.data[0][0])
-        return float(output.item())
+        _, value = self.model(torch.tensor(brd).float())
+        value = value.mean()
+        return float(value)
 
 
 def white_move(s, v):
@@ -120,74 +116,9 @@ def play(white,black):
 
     save_pgn(pgn_moves, white.model_name, black.model_name)
 
-def classical_play(color, test=True):
-    s = State() 
-    pgn_moves = []
-    gn = 1
-
-    if test:
-        black = ClassicValuator()  # AI black
-        white_name = color.model_name
-        black_name = "minimax"
-    else:
-        white = ClassicValuator()  # AI white
-        white_name = "minimax"
-        black_name = color.model_name
-    
-    print(f"Starting {white_name} v/s {black_name}...")
-    
-    pgn_moves = []
-    gn = 1
-
-
-    while not s.board.is_game_over():
-        if test:  # White is playing against ClassicValuator as black
-            white_played = white_move(s, color)
-            if white_played:
-                if gn > 1:
-                    pgn_moves[-1] += " "
-                pgn_moves.append(f"{gn}. {white_played}")
-                
-                if s.board.is_game_over():
-                    break
-                
-                black_played = bot_move(s, black)
-                if black_played:
-                    pgn_moves[-1] += f" {black_played}"
-                
-                gn += 1 
-
-        else:  # ClassicValuator as white is playing against black
-            white_played = bot_move(s, white)
-            if white_played:
-                if gn > 1:
-                    pgn_moves[-1] += " "
-                pgn_moves.append(f"{gn}. {white_played}")
-                
-                if s.board.is_game_over():
-                    break
-                
-                black_played = black_move(s, color)
-                if black_played:
-                    pgn_moves[-1] += f" {black_played}"
-                
-                gn += 1 
-
-    print("Game Over!")
-    print("Result:", s.board.result())
-
-    # Save PGN file
-    save_pgn(pgn_moves, white_name, black_name)
-
-
 
 if __name__ == "__main__":
-
     # Bot : Name, Arch_index
-    white = White("reinforce_two_basic",0)
-    black = Black("reinforce_two_basic",0)
+    white = White("alpha_stockfish",0)
+    black = Black("alpha_zero",0)
     play(white,black)
-
-    # Classical
-    
-    # classical_play(white,True)

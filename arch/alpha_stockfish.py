@@ -1,5 +1,6 @@
 import sys
 import os
+os.makedirs("checkpoints", exist_ok=True)
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, parent_dir)
 import chess
@@ -13,7 +14,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-
+import json
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels):
         super(ResidualBlock, self).__init__()
@@ -74,7 +75,7 @@ def board_to_tensor(board):
 
 import chess.engine
 
-def evaluate_model(model, stockfish_path, num_games=100):
+def evaluate_model(model, stockfish_path, num_games=100,device='cpu'):
     engine = chess.engine.SimpleEngine.popen_uci(stockfish_path)
     wins, draws, losses = 0, 0, 0
 
@@ -82,11 +83,11 @@ def evaluate_model(model, stockfish_path, num_games=100):
         board = chess.Board()
         
         while not board.is_game_over():
-            board_tensor = board_to_tensor(board)
+            board_tensor = board_to_tensor(board).to(device)
             policy, _ = model(board_tensor)
 
             legal_moves = list(board.legal_moves)
-            move_probs = policy[0].detach().numpy()
+            move_probs = policy[0].detach().cpu().numpy()
             move_probs_full = np.zeros(len(legal_moves))
             move_indices = {move: i for i, move in enumerate(legal_moves)}
 
@@ -120,21 +121,23 @@ def evaluate_model(model, stockfish_path, num_games=100):
     return wins, draws, losses
 
 
-def self_play_with_stockfish(model, num_games=1000):
+def self_play_with_stockfish(model, num_games=1000, checkpoint_interval=100, eval_games=1):
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device) 
     engine_path = r'./stockfish-windows-x86-64-avx2/stockfish/stockfish-windows-x86-64-avx2.exe'
     engine = chess.engine.SimpleEngine.popen_uci(engine_path)
-    
+    results_log = {"games": [], "wins": [], "draws": [], "losses": []}
     for game in range(num_games):
         board = chess.Board()
         states, rewards = [], []
 
         while not board.is_game_over():
-            board_tensor = board_to_tensor(board)
+            board_tensor = board_to_tensor(board).to(device)
             policy, value = model(board_tensor)
 
             legal_moves = list(board.legal_moves)
-            move_probs = policy[0].detach().numpy()
+            move_probs = policy[0].detach().cpu().numpy()
 
             move_probs_full = np.zeros(len(legal_moves))
             move_indices = {move: i for i, move in enumerate(legal_moves)}
@@ -166,21 +169,37 @@ def self_play_with_stockfish(model, num_games=1000):
 
         # Update rewards for all states visited in the game
         for state in states:
-            state_tensor = state.view(1, 5, 8, 8)
+            state_tensor = state.view(1, 5, 8, 8).to(device)
             _, value = model(state_tensor)
-            value_flat = value.view(-1)
-            loss = F.mse_loss(value_flat, torch.tensor([reward], dtype=torch.float32))
-            optimizer.zero_grad()
+            value_mean = value.view(-1).mean()
+            value_mean = value.view(-1).mean().unsqueeze(0)
+            reward_tensor = torch.tensor([reward], dtype=torch.float32).to(device)
+            loss = F.mse_loss(value_mean, reward_tensor)
             loss.backward()
             optimizer.step()
 
         print(f"Game {game + 1}/{num_games} complete.")
 
         # Evaluatin
-        if (game + 1) % 100 == 0:
-            wins, draws, losses = evaluate_model(model, engine_path, num_games=1)
-            print(f"Evaluation after {game + 1} games: Wins: {wins}, Draws: {draws}, Losses: {losses}")
+        if (game + 1) % checkpoint_interval == 0 or game == 0:
+            checkpoint_path = f"checkpoints/alpha_zero_{game+1}.pth"
+            torch.save(model.state_dict(), checkpoint_path)
+            print(f"Checkpoint saved: {checkpoint_path}")
 
+            # Evaluate the model against Stockfish
+            wins, draws, losses = evaluate_model(model, engine_path, num_games=eval_games,device = device)
+            print(f"Evaluation after {game + 1} games: Wins: {wins}, Draws: {draws}, Losses: {losses}")
+            
+            # Log results for later plotting
+            results_log["games"].append(game + 1)
+            results_log["wins"].append(wins)
+            results_log["draws"].append(draws)
+            results_log["losses"].append(losses)
+
+            # Save the results log to a file
+            with open("results_log.json", "w") as f:
+                json.dump(results_log, f)
+    
     engine.quit()
 
 if __name__ == "__main__":

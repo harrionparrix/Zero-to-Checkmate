@@ -7,11 +7,11 @@ from torch.utils.data import Dataset, DataLoader
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
-name = "Nakamura" # Name of the player
+name = "ding" # Name of the player
 
 class ChessValueDataset(Dataset):
     global name
-    def __init__(self):
+    def __init__(self,name=name):
         dat = np.load(f"processed/{name}_1M.npz")
         self.X = dat['arr_0']
         self.Y = dat['arr_1']

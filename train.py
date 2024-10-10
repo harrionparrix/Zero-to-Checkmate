@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from torch import optim
 from torch.utils.tensorboard import SummaryWriter
 
-name = "Nakamura"
+name = "Ding"
 
 class ChessValueDataset(Dataset):
     global name
